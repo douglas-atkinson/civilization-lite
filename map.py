@@ -1,6 +1,8 @@
 import random
 import pygame
-from config import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, TILE_TYPES
+from config import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, TILE_TYPES, TILE_LOOKUP, ASSET_PATHS
+import os
+import csv
 
 class Tile:
     def __init__(self, x, y, terrain):
@@ -16,11 +18,47 @@ class Tile:
             screen.blit(image, (self.x * TILE_SIZE, self.y * TILE_SIZE))
 
 class GameMap:
-    def __init__(self):
-        self.tiles = [
+    def __init__(self, map_file=None):
+
+        if map_file:
+            self.tiles = self.load_map_from_file(map_file)
+        else:
+            self.tiles = self.generate_random_map()
+
+
+    def load_map_from_file(self, map_file):
+        map_path = ASSET_PATHS['maps']
+        map_path_file = os.path.join(map_path, map_file)
+        try:
+            with open(map_path_file, 'r', newline='') as map_file_data:
+                reader = csv.reader(map_file_data)
+                tiles = []
+                for y, row in enumerate(reader):
+                    tile_row = []
+                    for x, terrain in enumerate(row):
+                        terrain = terrain.strip()
+                        try:
+                            terrain_id = int(terrain)
+                            terrain_name = TILE_LOOKUP[terrain_id]
+                            tile_row.append(Tile(x, y, terrain_name))
+                        except (ValueError, KeyError):
+                            raise ValueError(f"Invalid terrain type '{terrain}' at ({x}, {y})")
+                    tiles.append(tile_row)
+                return tiles
+
+        except FileNotFoundError:
+            print(f"Map file {map_file} not found. Generating random map instead.")
+            return self.generate_random_map()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return self.generate_random_map()
+
+
+    def generate_random_map(self):
+        tiles = [
             [Tile(x, y, random.choice(TILE_TYPES)) for x in range(MAP_WIDTH)]
-            for y in range(MAP_HEIGHT)
-        ]
+            for y in range(MAP_HEIGHT)]
+        return tiles
 
     def draw(self, screen, assets):
         for row in self.tiles:
@@ -62,3 +100,4 @@ class GameMap:
 
     def tile_to_world_coords(self, tile_x, tile_y):
         return tile_x * TILE_SIZE, tile_y * TILE_SIZE
+

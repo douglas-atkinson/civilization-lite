@@ -18,7 +18,7 @@ def main():
     clock = pygame.time.Clock()
 
     assets = load_tile_assets()
-    game_map = GameMap()
+    game_map = GameMap(map_file="coastal_battle.map")
 
     running = True
     while running:
